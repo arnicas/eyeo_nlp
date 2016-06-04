@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<link rel="stylesheet" type="text/css" href="css/tooltip.css">
+
+<style>
+
+body {
+  font-family: Arial;
+  padding: 50px;
+}
+
+svg {
+  padding: 10px 0 50px 20px;
+}
+
+.title {
+  display: inline-block;
+  position: relative;
+  color: dimgray;
+  font-size: 17px;
+  padding-left: 400px;
+}
+
+.intro {
+  max-width: 900px;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis {
+  font-size: 12px;
+}
+
+.x.axis path {
+  display: none;
+}
+
+
+.line {
+  fill: none;
+  stroke-width: 1.5px;
+  stroke-opacity: .8;
+}
+
+.axis.line {
+  stroke: none;
+}
+
+
+#title1 {
+  color: red;
+  margin-left: 100px;
+}
+
+
+.zeroline {
+  stroke: #ccc;
+  stroke-width: 1px;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+circle.point {
+  fill: dimgray;
+  fill-opacity: 0.7;
+  stroke: #eee;
+}
+
+.chart {
+  padding-bottom: 300px;
+}
+
+#neg {
+  color: firebrick;
+}
+
+#pos {
+  color: steelblue;
+}
+
+
+</style>
+
+<body>
+
+  <h2>Sentiment Over "Time"</h2>
+
+  <p class="intro">Plotting positive minus negative sentiment-labelled words in each grouping "time" period. Mouse over a dot for the words at each point. (Uses the output from get_sentiment_chunks.py, where you can set your own grouping chunk size.)
+ </p>
+
+
+  <div class="titles">
+    <h2 class="title">Net Sentiment During SOTU</h2>
+  </div>
+  <div class="chart">
+    <div class="linechart" id="mychart"></div>
+  </div>
+
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
+<script src="js/tooltip.js"></script>
+<script src="js/reusable_line.js"></script>
+
+
+<script>
+
+var getTooltipHtml = function(d) {
+  var pos = (d.poswords.length > 0) ? d.poswords : ["None"];
+  var neg = (d.negwords.length > 0) ? d.negwords : ["None"];
+  return "<p>Location: " + d.index + "</p><p id='pos'>Positive: " + pos.join('; ') + "</p>" +
+    "<p id='neg'>Negative: " + neg.join('; ') + "</p>";
+};
+
+function make_vis(data, selector) {
+
+  myline()
+    .$el(d3.select(selector))
+    .width(1000)
+    .height(500) // Set height
+    .data(data) // Set data
+    .interpolation("monotone")
+    .xArg("index")
+    .yArg("netpos")
+    .tooltips(true)
+    .render();
+}
+
+
+function make_net_data(data) {
+
+  var newdata = [];
+
+  data.forEach(function(d) {
+    list = d3.merge(d.poswords.concat(d.negwords));
+    string = list.join(', ');
+    newdata.push({
+        "index": +d.index,
+        "netpos" : +d.netpos,
+        "neg": +d.neg,
+        "pos": +d.pos,
+        "poswords": d.poswords,
+        "negwords": d.negwords,
+        "allwords": string
+    });
+
+  });
+  return newdata;
+}
+
+
+function process(error, data1, data2) {
+
+  console.log(data1);
+
+  if (error) { console.log("error", error); }
+
+  var data = make_net_data(data1);
+  make_vis(data, "#mychart");
+
+}
+
+queue()
+  .defer(d3.json, "../outputdata/sentiment.json")
+  .await(process);
+
+</script>
+
+</body>

@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<style>
+
+body {
+  font-family: Arial;
+  padding: 50px;
+}
+
+.barsgroup {
+  margin-left: 20px;
+}
+
+.bars {
+  display: inline-block;
+  position: relative;
+  margin-right: 40px;
+}
+
+.title {
+  display: inline-block;
+  position: relative;
+  padding-left: 150px;
+}
+
+#title1 {
+  color: steelblue;
+}
+
+#title2 {
+  color: firebrick;
+  padding-left: 400px;
+}
+
+.clouds {
+  display: inline-block;
+  position: relative;
+  margin-left: 20px;
+}
+
+
+</style>
+
+<body>
+
+  <h2>Word Counts</h2>
+
+  <p>Using TextKit output of just the verbs (plus some cleanup in a local stopwords file) and Jason Davies' D3 wordcloud d3.layout.cloud.js. Draws simple bars with dimple.js.</p>
+
+
+  <div class="titles">
+    <h2 class="title" id="title1">Emma Verbs</h2>
+    <h2 class="title" id="title2">Pride&amp;Prej Verbs</h2>
+  </div>
+  <div class="cloudsgroup">
+    <div class="clouds" id="wordcloud1"></div>
+    <div class="clouds" id="wordcloud2"></div>
+  </div>
+  <div class="barsgroup">
+    <div class="bars" id="bars1"></div>
+    <div class="bars" id="bars2"></div>
+  </div>
+
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://dimplejs.org/dist/dimple.v2.1.6.min.js"></script>
+<script src="js/d3.layout.cloud.js"></script>
+
+<script>
+
+
+function make_barvis(data, selector, color) {
+  var svg = dimple.newSvg(selector, 525, 1150);
+  var myChart = new dimple.chart(svg, data);
+  myChart.setBounds(75, 30, 425, 1050);
+  myChart.addMeasureAxis("x", "count");
+  var y = myChart.addCategoryAxis("y", "word");
+  y.addOrderRule("count");  // largest at top
+  myChart.defaultColors = [new dimple.color(color)];
+  myChart.addSeries(null, dimple.plot.bar);
+  myChart.draw();
+}
+
+function make_wordcloud(data, selector, color) {
+
+  var fontscale = d3.scale.linear()
+    .range([8, 60])
+    .domain(d3.extent(data, function (d) {
+      return d.count;
+    }));
+
+  var layout = d3.layout.cloud()
+    .size([500, 500])
+    .words(data)
+    .rotate(0)
+    .font("Impact")
+    .spiral("rectangular")
+    .text(function(d) {
+      return d.word; })
+    .fontSize(function(d) {
+      return fontscale(d.count); })
+    .on("end", draw);
+
+  function draw(words) {
+    d3.select(selector).append("svg")
+      .attr("width", layout.size()[0])
+      .attr("height", layout.size()[1])
+      .attr("class", "wordcloud")
+      .append("g")
+      // without the transform, words would get cutoff to the left and top, they would
+      // appear outside of the SVG area
+      .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
+      .selectAll("word")
+      .data(words)
+      .enter().append("text")
+      .style("font-size", function(d) {
+        return fontscale(d.count) + "px";
+      })
+      .style("font-family", "Impact")
+      .attr("fill", color)
+      .attr("text-anchor", "middle")
+      .attr("transform", function(d) {
+          return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+      })
+      .text(function(d) {
+          return d.word; });
+  }
+
+  layout.start();
+}
+
+
+function clean_data(text, stopwords) {
+
+  var data = d3.csv.parseRows(text);
+  console.log(data);
+
+  var counts = [];
+  // filter out stopwords here
+
+  data.forEach(function(d) {
+    var word = d[0];
+    var count = +d[1];
+    if (stopwords.indexOf(word) == -1) {
+      counts.push( {
+        word: word,
+        count: count
+      });
+    }
+  });
+  counts.sort(function(a,b) {return b.count - a.count;});
+  return counts;
+}
+
+
+function process(error, data1, data2) {
+
+  if (error) { console.log("error", error); }
+
+  var stopwords = [];
+  stopwords = ["said", "say", "elizabeth", "mr.", "bingley", "mrs.", "emma", "collins"];
+
+  var emmaData = clean_data(data1, stopwords),
+    prideData = clean_data(data2, stopwords);
+
+  // cutting off at the first 150 words.
+
+  make_barvis(emmaData.slice(0,150), "#bars1", "steelblue");
+  make_wordcloud(emmaData.slice(0,150), "#wordcloud1", "steelblue");
+  make_barvis(prideData.slice(0,150), "#bars2", "firebrick");
+  make_wordcloud(prideData.slice(0,150), "#wordcloud2", "firebrick");
+}
+
+queue()
+  .defer(d3.text, "../outputdata/emma_VB_counts.csv")
+  .defer(d3.text, "../outputdata/pride_VB_counts.csv")
+  .await(process);
+
+</script>
+
+</body>

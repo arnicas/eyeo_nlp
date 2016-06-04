@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<style>
+
+body {
+  font-family: Arial;
+  padding: 50px;
+}
+
+.viswrapper {
+}
+
+.vis {
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  width: 500px;
+  margin-left: 20px;
+}
+
+
+#both {
+  padding-top: 30px;
+  padding-left: 30px;
+}
+
+.word {
+  bottom: 0;
+  left: 0;
+  margin: 3px;
+  display: inline-block;
+}
+
+.title {
+  display: inline-block;
+  position: relative;
+  padding-left: 100px;
+  margin-left: 50px;
+}
+
+#title1 {
+  max-width: 300px;
+  padding-left: 150px;
+}
+
+#title2 {
+  padding-left: 300px;
+  max-width: 300px;
+}
+
+</style>
+
+<body>
+
+  <h2>Word Counts</h2>
+
+  <p>An alternative to traditional word clouds. Word counts by superscript.</p>
+
+  <div class="titles">
+    <h2 class="title" id="title1">Emma VBs</h2>
+    <h2 class="title" id="title2">Pride &amp; Prej VBs</h2>
+  </div>
+
+  <div class="viswrapper">
+    <div class="vis" id="vis1"></div>
+    <div class="vis" id="vis2"></div>
+  </div>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+
+<script>
+
+var width = 900,
+  height = 400;
+
+var fontscale = d3.scale.linear()
+    .range([12, 60]);
+
+var intersection = [];
+
+
+// color superscript, or the word itself?
+var supercolor = d3.scale.linear().range(["green", "orange"]);
+
+function get_count(d) {
+
+  // should be done with templates -
+  // goal is to only reduce the font by 50% if it's above a certain level
+  // and ideally only show superscript count if the value differs, but that's
+  // harder to mockup fast
+
+  var tag = "<sup class='super' style='";
+  if (fontscale(d.count) >= 18) {
+    tag += "font-size:50%;";
+  } else {
+    tag += "font-size:75%;"; // otherwise the 'sup' sets it to 'smaller';
+  }
+  tag+= "color:" + supercolor(d.count) + ";";
+  tag+="'>";
+  return tag+= d.count + "</sup>"
+}
+
+function make_vis(data, selector, color) {
+
+  // scale is relative to each data set here
+
+  fontscale.domain(d3.extent(data, function (d) {
+      return d.count;
+    }));
+
+  supercolor.domain(d3.extent(data, function (d) {
+      return d.count;
+    }));
+
+
+  d3.select(selector)
+    .selectAll("div.word")
+    .data(data)
+    .enter()
+    .append("div")
+    .attr("class", "word")
+    .style("font-size", function(d) {
+      return fontscale(d.count) + "px";
+    })
+    .style("color", color)
+    .html(function(d) {
+      return d.word + get_count(d);
+    });
+
+}
+
+function clean_data(text, stopwords, cutoff) {
+
+  var data = d3.csv.parseRows(text);
+  console.log(data);
+
+  var counts = [];
+  // filter out stopwords here
+
+  data.forEach(function(d) {
+    var word = d[0];
+    var count = +d[1];
+    if (stopwords.indexOf(word) == -1) {
+      counts.push( {
+        word: word,
+        count: count
+      });
+    }
+  });
+  counts.sort(function(a,b) {return b.count - a.count;});
+  return counts.slice(0, cutoff);
+}
+
+
+
+function process(error, data1, data2) {
+
+  if (error) { console.log("error", error); }
+
+  var stopwords = [];
+  stopwords = ["said", "say", "elizabeth", "mr.", "bingley", "mrs.", "emma", "collins"];
+
+  var mydata1 = clean_data(data1, stopwords, 90),
+    mydata2 = clean_data(data2, stopwords, 90);
+
+  make_vis(mydata1, "#vis1", "steelblue");
+  d3.select("#title1").style("color", "steelblue");
+  make_vis(mydata2, "#vis2", "firebrick");
+  d3.select("#title2").style("color", "firebrick");
+
+}
+
+queue()
+  .defer(d3.text, "../outputdata/emma_lemma_verbs.csv")
+  .defer(d3.text, "../outputdata/pride_lemma_verbs.csv")
+  .await(process);
+
+</script>
+
+</body>

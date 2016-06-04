@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<style>
+
+body {
+  font-family: Arial;
+}
+
+.barsgroup {
+  margin-left: 20px;
+}
+
+.bars {
+  display: inline-block;
+  position: relative;
+  margin-right: 20px;
+}
+
+.title {
+  display: inline-block;
+  position: relative;
+  padding-left: 150px;
+}
+
+#demtitle {
+  color: steelblue;
+}
+
+#reptitle {
+  color: red;
+  margin-left: 20px;
+}
+
+.clouds {
+  display: inline-block;
+  position: relative;
+  margin-left: 20px;
+}
+
+
+</style>
+
+<body>
+
+  <h2>Word Counts by Chapter - Split up in JS</h2>
+
+  <p>Draws simple line with dimple.js.</p>
+
+
+  <div class="titles">
+    <h2 class="title" id="title1">Emma</h2>
+  </div>
+  <div class="barsgroup">
+    <div class="bars" id="emma"></div>
+  </div>
+
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://dimplejs.org/dist/dimple.v2.1.6.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
+<script src="js/wordcount.js"></script>
+<script src="js/d3.layout.cloud.js"></script>
+
+<script>
+
+
+function make_vis(data, selector, color) {
+
+  var svg = dimple.newSvg(selector, 700, 500);
+      var myChart = new dimple.chart(svg, data);
+      myChart.setBounds(60, 30, 505, 305);
+      var x = myChart.addCategoryAxis("x", "chapter");
+      x.addOrderRule("chapter");
+      myChart.addMeasureAxis("y", "words");
+      myChart.defaultColors = [new dimple.color(color)];
+      var s = myChart.addSeries(null, dimple.plot.line);
+      myChart.draw();
+}
+
+
+function make_data(data) {
+
+  var counts = [];
+
+  var chapters = data.split('CHAPTER');
+  chapters.forEach(function(ch,i) {
+    counts.push({
+      chapter: i,
+      words: ch.split(" ").length
+    });
+  });
+
+  return counts;
+}
+
+
+function process(error, data1) {
+
+  if (error) { console.log("error", error); }
+
+  var data = make_data(data1);
+  make_vis(data, "#emma", "steelblue");
+
+}
+
+queue()
+  .defer(d3.text, "data/Austen_Emma.txt")
+  .await(process);
+
+</script>
+
+</body>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<style>
+
+  body {
+    font-family: Arial;
+  }
+
+  .title {
+    display: inline-block;
+    position: relative;
+    padding-left: 50px;
+  }
+
+  .text {
+    display: inline-block;
+    position: relative;
+    margin-left: 40px;
+  }
+
+  .text line {
+    stroke: steelblue;
+  }
+
+  line.dialog {
+    stroke: pink;
+  }
+
+  .tooltip {
+    position: absolute;
+    z-index: 10;
+  }
+
+  .tooltip p {
+    padding: 2px;
+    background-color: #eee;
+  }
+
+</style>
+
+<h1>Literal "Shape" of a Book: Line Lengths</h1>
+
+<p>Pixel per line now, with tooltips for the text itself as you mouse over.
+
+<p>Pink lines are dialog lines. Note: This takes a little time to draw.
+
+  <div class="titles">
+    <h2 class="title" id="#title1">Emma</h2>
+    <h2 class="title" id="#title2">Moby Dick</h2>
+  </div>
+
+<div class="texts">
+  <div class="text" id="text1"></div>
+  <div class="text" id="text2"></div>
+</div>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
+<script>
+
+
+function get_lines(string){
+  return string.split("\n");
+}
+
+var width = 100;
+var height;
+
+var linelength = d3.scale.linear().range([0, width]);
+
+var quotes = false;
+
+var tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip");
+
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+
+function color_it(line) {
+  // hack for 2 quotes in one line - assume it ends quote
+  if (line.match(/"/g) && line.match(/"/g).length == 2) {
+    quotes = false;
+    return true;
+  }
+  if (line.indexOf('"') != -1) {
+    quotes = !quotes;
+  }
+  return quotes;
+}
+
+function draw_lines(data, selector) {
+
+  linelength.domain(d3.extent(data, function(d) {
+    return d.length;
+   })
+  );
+
+  var svg = d3.select(".texts").select(selector).append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  svg.selectAll("line")
+    .data(data)
+    .enter()
+    .append("line")
+    .attr("x1", 0)
+    .attr("x2", function(d) {
+      return linelength(d.length);
+    })
+    .attr("y1", function(d, i) {
+      return i;
+    })
+    .attr("y2", function(d, i) {
+      return i;
+    })
+    .classed("dialog", function (d) {
+      if (color_it(d)) {
+        return true;
+      } else {
+        return false;
+      }
+    })
+    .on("mouseover", mouseoverFunc)
+    .on("mousemove", mousemoveFunc)
+    .on("mouseout", mouseoutFunc);
+}
+
+function mouseoverFunc(d) {
+    tooltip
+      .style("display", null) // this removes the display none setting from it
+      .html("<p>" + d + "</p>");
+  }
+
+  function mouseoutFunc() {
+      // this removes special classes for focusing from all lines. Back to default.
+      tooltip.style("display", "none");  // this sets it to invisible!
+  }
+
+  function mousemoveFunc(d) {
+    //console.log("events", window.event, d3.event);
+    tooltip
+      .style("top", (d3.event.pageY - 10) + "px" )
+      .style("left", (d3.event.pageX + 10) + "px");
+  }
+
+
+function process(error, data1, data2) {
+
+if (error) {console.log(error);}
+
+var lines1 = get_lines(data1);
+console.log(lines1.length);
+
+var lines2 = get_lines(data2);
+console.log(lines2.length);
+
+height = d3.max([lines1.length, lines2.length]);
+
+draw_lines(lines1, "#text1");
+draw_lines(lines2, "#text2");
+
+}
+
+// these paths depend on the web server starting at the root.
+queue()
+  .defer(d3.text, "../data/books/Austen_Emma.txt")
+  .defer(d3.text, "../data/books/Melville_MobyDick.txt")
+  .await(process);
+
+</script>
+
+</body>

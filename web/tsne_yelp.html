@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>TSNE Plot</title>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+        <style type="text/css">
+
+            body {
+                background-color: white;
+                font-family: Helvetica, Arial, sans-serif;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin: 0;
+            }
+
+            p {
+                font-size: 14px;
+                margin: 10px 0 0 0;
+            }
+
+            svg {
+                background-color: white;
+            }
+
+            circle {
+                opacity: .5;
+                cursor: pointer;
+            }
+
+            circle:hover {
+                fill: orange;
+            }
+
+            text.word {
+                font-size: "5px";
+                stroke-opacity: .8;
+                cursor: pointer;
+            }
+
+            .hidden {
+                display: none;
+            }
+
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+
+            .axis text {
+                font-family: sans-serif;
+                font-size: 11px;
+            }
+
+        </style>
+    </head>
+    <body>
+
+        <h2>Yelp Review Words</h2>
+
+        <p>This is the output of a word2vec python processing on a 229K sample of Yelp reviews.They were processed with gensim, then the most common 1500 words were plotted with TSNE in 2 dimensions. The color shows the sentiment polarity (red-blue, neg-pos) based on simple word sentiment from AFINN-111.txt.  As you can see, more positive words (blue) appears in the reviews.</p>
+        <p>Click a dot to show the word associated with it; click the word to hide it again. Ask me for more info at @arnicas.</p>
+
+        <script type="text/javascript">
+
+
+            var fullWidth = 1100;
+            var fullHeight = 900;
+            var margin = {top:20, right:10, bottom:50, left:50};  //Top, right, bottom, left
+
+            var width = fullWidth - margin.left - margin.right;
+            var height = fullHeight - margin.top - margin.bottom;
+
+            var colorScale = d3.scale.linear().range(["red", "gray", "blue"]);
+
+            var xScale = d3.scale.linear()
+                                .range([ 0, width]);
+
+            // top to bottom:
+            var yScale = d3.scale.linear()
+                                .range([ height, 0 ]);
+
+            //  Custom tick count -- 15. // still needs a transform on it
+            var xAxis = d3.svg.axis()
+                            .scale(xScale)
+                            .orient("bottom");
+
+        // Custom format on ticks - just a string return, not a function here
+            var yAxis = d3.svg.axis()
+                            .scale(yScale)
+                            .orient("left");
+
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", fullWidth)
+                        .attr("height", fullHeight)
+                        .append("g")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+            d3.json("yelp.json", function(data) {
+
+                xScale.domain(
+                    d3.extent(data, function(d) {
+                        return +d.x;
+                    }));
+
+                yScale.domain(
+                    d3.extent(data, function(d) {
+                        return +d.y;
+                    }));
+
+                colorScale.domain([-5, 0, 5]);
+
+                var circles = svg.selectAll("circle")
+                                .data(data)
+                                .enter()
+                                .append("circle");
+
+                circles.attr("cx", function(d) {
+                        return xScale(+d.x);
+                    })
+                    .attr("cy", function(d) {
+                        return yScale(+d.y);
+                    })
+                    .attr("r", 4)
+                    .style("fill", function(d) {
+                        return colorScale(+d.sentiment);
+                    })
+                    .attr("id", function(d) {
+                        return d.word;
+                    })
+                    .append("title")
+                    .text(function(d) {
+                        return d.word;
+                    });
+
+                var labels = svg.selectAll("text")
+                    .data(data)
+                    .enter()
+                    .append("text")
+                    .attr("class", "word")
+                    .attr("id", function(d) {
+                        return d.word;
+                    })
+                    .text(function(d) {return d.word;})
+                    .attr("x", function(d) {
+                        return xScale(+d.x);
+                    })
+                    .attr("y", function(d) {
+                        return yScale(+d.y);
+                    })
+                    .attr("dx", 2)
+                    .attr("dy", 2)
+                    .attr("font-size", 10)
+                    .attr("text-anchor", "start")
+                    .classed("hidden", true)
+                    .on("click", function (d) {
+                        return d3.select(this).classed("hidden", true);
+                    });
+
+                circles.on('click', function() {
+                    var word = d3.select(this).attr("id");
+                    d3.select("text.word#"+word).classed("hidden", false);
+                });
+
+
+                svg.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(xAxis);
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis);
+
+            });
+
+
+
+        </script>
+
+    </body>
+</html>

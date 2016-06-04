@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<style>
+
+body {
+  font-family: Arial;
+}
+
+.viswrapper {
+}
+
+.vis {
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  width: 900px;
+  margin-left: 20px;
+}
+
+.word {
+  bottom: 0;
+  left: 0;
+  margin: 3px;
+  display: inline-block;
+}
+
+.title {
+  display: inline-block;
+  position: relative;
+  padding-left: 100px;
+}
+
+#demtitle {
+  color: steelblue;
+  max-width: 300px;
+}
+
+#reptitle {
+  color: red;
+  margin-left: 200px;
+  max-width: 300px;
+}
+
+#spiral {
+  stroke: none;
+}
+.super {
+  fill: steelblue;
+}
+
+</style>
+
+<body>
+
+  <h2>Word Count, Animated Spiral Shape</h2>
+
+  <p>Spiral shape isn't calculated from the words themselves, so it's kind of trial and error to get it to look right!  And to cut off at the right number of words.</p>
+
+  <div class="titles">
+    <h2 class="title">Spiral!</h2>
+  </div>
+
+  <div class="viswrapper">
+    <div class="vis"></div>
+  </div>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="js/spiral.js"></script>
+
+<script>
+
+var width = 900,
+  height = 900;
+
+var fontscale = d3.scale.linear()
+    .range([12, 60]);
+
+// color superscript, or the word itself?
+var supercolor = d3.scale.linear().range(["green", "orange"]);
+
+
+function make_vis(data, selector, colortheme) {
+
+  var colortheme = colortheme || "difference";
+
+  // scale is relative to each data set here
+
+  fontscale.domain(d3.extent(data, function (d) {
+      return +d.count;
+    }));
+
+  supercolor.domain(d3.extent(data, function (d) {
+      return +d.count;
+    }));
+
+  // getSpiralPath(dir, points, center, separation, revs)
+  var spiralPath = getSpiralPath(-1, 400, [450,450], 40, 7);
+  //Create the SVG
+  var svg = d3.select(selector).append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  //Create an SVG path
+  svg.append("path")
+    .attr("id", "spiral") //very important to give the path element a unique ID to reference later
+    .attr("d", spiralPath) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
+    .style("fill", "none");
+
+  //Create an SVG text element and append a textPath element
+  var texts = svg.append("text")
+     .append("textPath") //append a textPath to the text element
+    .attr("xlink:href", "#spiral") //place the ID of the path here
+    .style("text-anchor","middle") //place the text halfway on the arc
+    .attr("startOffset", "50%");
+
+  replay(data, texts);
+
+}
+
+function redraw(data, texts) {
+
+  var words = texts.selectAll("tspan")
+    .data(data, function(d) {return d.word;});
+
+    words
+    .enter()
+    .append("tspan")
+    .style("font-size", function(d) {
+      return fontscale(d.count) + "px";
+    })
+    .text(function(d) {return d.word});
+
+    words
+    .append("tspan")
+    .style("baseline-shift", "super")
+    .style("font-size", function(d) {
+      if (d.count > 18) {
+        return "50%";
+      }
+      else {
+        return "75%";
+      }
+    })
+    .style("color", "red")
+    .attr("class", "super")
+    .text(function(d) {
+      return d.count;
+    });
+
+    words.exit().remove();
+}
+
+
+function replay(data, texts) {
+
+  var slices = [];
+  for (var i = 0; i < data.length; i++) {
+    slices.push(data.slice(0, i+1));
+  }
+  slices.forEach(function(slice, index){
+    setTimeout(function(){
+      redraw(slice, texts);
+    }, index * 100);
+  });
+}
+
+function clean_data(text, stopwords, cutoff) {
+
+  var data = d3.csv.parseRows(text);
+  console.log(data);
+
+  var counts = [];
+  // filter out stopwords here
+
+  data.forEach(function(d) {
+    var word = d[0];
+    var count = +d[1];
+    if (stopwords.indexOf(word) == -1) {
+      counts.push( {
+        word: word,
+        count: count,
+        label: "none"
+      });
+    }
+  });
+  counts.sort(function(a,b) {return b.count - a.count;});
+  return counts.slice(0,cutoff);
+}
+
+
+function process(error, data1) {
+
+  if (error) { console.log(error); }
+
+  var stopwords = [];
+  var mydata = clean_data(data1, stopwords, 85);
+  var data = mydata.slice().reverse();
+  make_vis(data, ".vis");
+}
+
+queue()
+  .defer(d3.text, "../outputdata/emma_word_counts.csv") // using text because we have no header rows
+  .await(process);
+
+</script>
+
+</body>
