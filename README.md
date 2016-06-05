@@ -41,7 +41,7 @@ If your notebook opens in a browser window, you are all set for the tutorial.  L
 When you want to shut down the python venv, you use:
 
 ````
->deactivate
+>source deactivate [just deactivate, on windows]
 ````
 
 And you can ^c in the jupyter window and in the server window, to shut them down.
