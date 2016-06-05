@@ -6,7 +6,7 @@ Install miniconda for your platform here:
 http://conda.pydata.org/miniconda.html
 
 ````
->conda env create -f environment.yml
+>conda env create -f requirements.yml
 ````
 
 This will install a boatload of libraries we need. Then, to use it, 
