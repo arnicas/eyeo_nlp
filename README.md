@@ -50,6 +50,27 @@ And you can ^c in the jupyter window and in the server window, to shut them down
 
 If you have data files to use, it's best if they are plain text, ideally ascii. You can put them into a directory inside "data".  There are tools to convert PDFs, but it's not part of this class.
 
+## For the Actual Class
+
+I think we will have too many people downloading too many things if we do it at the start.  Let's all just make a small env for the basics before lunch.
+
+````
+>conda create --name tvis python=2 nltk jupyter
+....say y to "proceed" and after that runs:
+>source activate tvis
+> pip install textkit
+> cd python
+> jupyter notebook
+````
+
+When we add to it for the afternoon, or if the internet seems fast, you will want to do this, inside the env:
+
+````
+>conda install matplotlib numpy scipy
+and eventually
+>conda install scikit-learn gensim pandas
+````
+
 
 
 
