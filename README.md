@@ -34,7 +34,7 @@ Your cursor should change to show the environment is active:
 Before you try to do anything at the command line, make sure you do this in the console window:
 
 ````
->export NLTK_DATA="[copy in the full path to the nltk data folder in this repo here]"
+(textkit)>export NLTK_DATA="[copy in the full path to the nltk data folder in this repo here]"
 ````
 
 For instance, my path is `"/Users/lynn/Documents/My Talks and Courses/Eyeo-NLP/eyeo/eyeo_nlp/nltk_data".`
@@ -42,13 +42,14 @@ For instance, my path is `"/Users/lynn/Documents/My Talks and Courses/Eyeo-NLP/e
 
 For any console windows you open and want to use textkit commands in, you'll need to make sure that env variable is set. Also for running textkit shell commands in the notebook. (Otherwise, you need to use the nltk downloader to get data files.  You can do that with nltk.download() in the Jyupter notebook.)
 
-Now, you can type the notebook command:
+Now, you can cd into the python directory, and then type the notebook command:
 
 ````
+(textkit)>cd python
 (textkit)>jupyter notebook
 ````
 
-If your notebook opens in a browser window, you are all set for the tutorial.  You can click on the python folder in the browser to get to the notebook files. Leave the console window running as is, too!
+If your notebook opens in a browser window, you are all set for the tutorial.  Leave the console window running as is, too!
 
 ### Console Window 2, for the Web Server
 
